@@ -164,3 +164,4 @@ class Events(TapHibobStream):
 #         """As needed, append or transform raw data to match expected structure."""
 #         # TODO: Delete this method if not needed.
 #         return row
+
