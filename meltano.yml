@@ -11,9 +11,9 @@ plugins:
     - catalog
     - discover
     config:
-      api_key: API-KEY
-      app_key: APP-KEY
-      start_date: '2022-10-05T00:00:00Z'
+      authorization: API-KEY
+      api_url: https://api.hibob.com/
+      start_date: '2022-01-01'
   
   loaders:
   - name: target-jsonl

@@ -8,13 +8,13 @@ from singer_sdk import Tap, Stream
 from singer_sdk import typing as th
 
 from tap_hibob.streams import (
-    Events,
+    Employees,
 )
 
 PLUGIN_NAME = "tap-hibob"
 
-STREAM_TYPES = [ 
-    Events,
+STREAM_TYPES = [
+    Employees,
 ]
 
 class TapHibob(Tap):
@@ -22,11 +22,25 @@ class TapHibob(Tap):
 
     name = "tap-hibob"
     config_jsonschema = th.PropertiesList(
-        th.Property("url_base", th.StringType, required=False, description="Url base for the source endpoint"),
-        th.Property("api_key", th.StringType, required=False, description="API key"),
-        th.Property("app_key", th.StringType, required=False, description="Application key"),
-        th.Property("api_token", th.StringType, required=False, description="api token for Basic auth"),
-        th.Property("start_date", th.StringType, required=False, description="start date for sync"),
+        th.Property(
+            "authorization",
+            th.StringType,
+            required=True,
+            description="Authorization token for Auth2.0",
+        ),
+        th.Property(
+            "start_date",
+            th.DateTimeType,
+            required=False,
+            description="The earliest record date to sync",
+        ),
+        th.Property(
+            "api_url",
+            th.StringType,
+            required=False,
+            default="https://api.hibob.com",
+            description="The url for the API service",
+        ),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:
