@@ -116,6 +116,7 @@ class Employees(TapHibobStream):
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
+        # TODO: Improve the logic below and simplify it.
         employees_keys = set([
                              "id",
                              "creationDateTime",
