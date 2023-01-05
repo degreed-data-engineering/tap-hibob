@@ -8,17 +8,17 @@ These are the steps required for using this repo as a 'hibob' for a Meltano extr
 
 1.  Being aware of case sensitivity, replace the following throughout the repo:
 
-* `tap-hibob` >`tap-datadog` 
-* `tap_hibob` > `tap_datadog`
-* `TapHibobStream` > `TapDatadogStream` (inside `streams.py`)
+* `tap-datadog` >`tap-hibob`
+* `tap_datadog` > `tap_hibob`
+* `TapDatadogStream` > `TapHibobStream` (inside `streams.py`)
 
 2. Update the following folders/files to:
-* `tap_hibob` > `tap_datadog`
-* `tap-hibob.sh` > `tap-datadog.sh`
+* `tap_datadog` > `tap_hibob`
+* `tap-datadog.sh` > `tap-hibob.sh`
 
-3. Inside `streams.py` update TapHibobStream with the authentication used for the tap-datadog api calls.  Note: all streams in streams.py work as a heirarchy further down. i.e. you can replace the http headers in another stream
+3. Inside `streams.py` update TapHibobStream with the authentication used for the tap-hibob api calls.  Note: all streams in streams.py work as a heirarchy further down. i.e. you can replace the http headers in another stream
 
-4. Using `Events(TapHibobStream)` as an example, build your first stream to be synced. There are comments to help identify what values to use 
+4. Using `Events(TapHibobStream)` as an example, build your first stream to be synced. There are comments to help identify what values to use
 
 For setting the `records_jsonpath` value in the stream, you can use a tool likle postman to make a sample call and view the response json.  After identifying what keys and values you need to extract, you will need to narrow down the json path. This is a helpful site that you can paste the response text in and help locate the correct path to use.  In this example, we want to only extract the `id` and `type` values inside `data`:
 
@@ -85,7 +85,7 @@ For the schema, you can create the .json file and place it in the schemas/ folde
 }
 ```
 
-- **Option 2:** Defining schema using hte PropertiesList in the stream `class`: 
+- **Option 2:** Defining schema using hte PropertiesList in the stream `class`:
 ```python
 schema = th.PropertiesList(
         th.Property("id", th.NumberType),
@@ -116,14 +116,14 @@ Install poetry for the package
 poetry install
 ```
 
-To confirm everything is setup properly, run the following: 
+To confirm everything is setup properly, run the following:
 ```bash
 poetry run tap-hibob --help
 ```
 
-To run the tap locally outside of Meltano and view the response in a text file, run the following: 
+To run the tap locally outside of Meltano and view the response in a text file, run the following:
 ```bash
-poetry run tap-hibob > output.txt 
+poetry run tap-hibob > output.txt
 ```
 
 A full list of supported settings and capabilities is available by running: `tap-hibob --about`
@@ -134,16 +134,16 @@ To test locally, create a `config.json` with required config values in your tap_
 
 ```json
 {
-  "api_key": "$DD_API_KEY",
-  "app_key": "$DD_APP_KEY",
+  "api_key": "$HB_API_KEY",
+  "app_key": "$HB_APP_KEY",
   "start_date": "2022-10-05T00:00:00Z"
 }
 ```
 
-**note**: It is critical that you delete the config.json before pushing to github.  You do not want to expose an api key or token 
-### Add to Meltano 
+**note**: It is critical that you delete the config.json before pushing to github.  You do not want to expose an api key or token
+### Add to Meltano
 
-The provided `meltano.yml` provides the correct setup for the tap to be installed in the data-houston repo.  
+The provided `meltano.yml` provides the correct setup for the tap to be installed in the data-houston repo.
 
 At this point you should move all your updated tap files into its own tap-datadog github repo. You also want to make sure you update in the `setup.py` the `url` of the repo for you tap.
 
@@ -152,27 +152,27 @@ Update the following in meltano within the data-houston repo with the new tap-da
 ```yml
 plugins:
   extractors:
-  - name: tap-datadog
-    namespace: tap_datadog
-    pip_url: git+https://github.com/degreed-data-engineering/tap-datadog
+  - name: tap-hibob
+    namespace: tap_hibob
+    pip_url: git+https://github.com/degreed-data-engineering/tap-hibob
     capabilities:
     - state
     - catalog
     - discover
     config:
-      api_key: $DD_API_KEY
-      app_key: $DD_APP_KEY
+      api_key: $HB_API_KEY
+      app_key: $HB_APP_KEY
       start_date: '2022-10-05T00:00:00Z'
  ```
 
 To test in data-houston, run the following:
 1. `make meltano` - spins up meltano
-2. `meltano install extractor tap-datadog` - installs the tap
-3. `meltano invoke tap-datadog --discover > catalog.json` - tests the catalog/discovery
-3. `meltano invoke tap-datadog > output.txt` - runs tap with .txt output in `meltano/degreed/`
+2. `meltano install extractor tap-hibob` - installs the tap
+3. `meltano invoke tap-hibob --discover > catalog.json` - tests the catalog/discovery
+3. `meltano invoke tap-hibob > output.txt` - runs tap with .txt output in `meltano/degreed/`
 
 That should be it! Feel free to contribute to the tap to help add functionality for any future sources
 ## Singer SDK Dev Guide
 
-See the [dev guide](https://sdk.meltano.com/en/latest/index.html) for more instructions on how to use the Singer SDK to 
+See the [dev guide](https://sdk.meltano.com/en/latest/index.html) for more instructions on how to use the Singer SDK to
 develop your own taps and targets.

@@ -2,6 +2,7 @@
 name = "tap-hibob"
 version = "0.0.1"
 description = "`tap-hibob` is Singer-compliant hibob tap built with Singer SDK."
+authors = ["Merve Eren <meren@degreed.com>"]
 license = "Apache v2"
 
 [tool.poetry.dependencies]
