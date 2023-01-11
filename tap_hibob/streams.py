@@ -62,18 +62,11 @@ class Employees(TapHibobStream):
                 th.Property("startDate", th.StringType),
                 th.Property("department", th.StringType),
                 th.Property("isManager", th.BooleanType),
-                th.Property("title", th.StringType),
                 th.Property("site", th.StringType),
                 th.Property(
                 "reportsTo",
                     th.ObjectType(
                         th.Property("id", th.StringType),
-                    ),
-                ),
-                th.Property(
-                "customColumns",
-                    th.ObjectType(
-                        th.Property("column_1666971582470", th.StringType),
                     ),
                 ),
             ),
@@ -106,6 +99,33 @@ class Employees(TapHibobStream):
                 ),
             ),
         ),
+        th.Property(
+        "humanReadable",
+            th.ObjectType(
+                th.Property(
+                "work",
+                    th.ObjectType(
+                        th.Property("custom",
+                                        th.ObjectType(
+                                            # CompanyName
+                                            th.Property("field_1667499206086", th.StringType),
+                                            # AssociateID
+                                            th.Property("field_1667499039796", th.StringType),
+                                        ),
+                        ),
+                        th.Property("customColumns",
+                                        th.ObjectType(
+                                            # Subdepartment
+                                            th.Property("column_1667499229415", th.StringType),
+                                        ),
+                        ),
+                        th.Property("reportsTo", th.StringType),
+                        th.Property("department", th.StringType),
+                        th.Property("title", th.StringType),
+                    ),
+                ),
+            ),
+        ),
     ).to_dict()
 
     def get_url_params(
@@ -113,6 +133,7 @@ class Employees(TapHibobStream):
     ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
         params["showInactive"] = "true"
+        params["includeHumanReadable"] = "true"
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
@@ -130,6 +151,7 @@ class Employees(TapHibobStream):
                              "internal",
                              "address",
                              "payroll",
+                             "humanReadable",
                              ])
         for k in list(row.keys()):
             if k not in employees_keys:
@@ -140,9 +162,7 @@ class Employees(TapHibobStream):
                                  "reportsTo",
                                  "department",
                                  "isManager",
-                                 "title",
                                  "site",
-                                 "customColumns",
                                 ])
         for k in list(row.get("work", {}).keys()):
             if k not in employees_work_keys:
@@ -151,10 +171,6 @@ class Employees(TapHibobStream):
             for k in list(row.get("work", {}).get("reportsTo", {}).keys()):
                 if k not in set(["id"]):
                     row.get("work", {}).get("reportsTo", {}).pop(k, None)
-        if row.get("work", {}).get("customColumns"):
-            for k in list(row.get("work", {}).get("customColumns", {}).keys()):
-                if k not in set(["column_1666971582470"]):
-                    row.get("work", {}).get("customColumns", {}).pop(k, None)
 
         employees_internal_keys = set([
                                  "terminationDate",
@@ -178,11 +194,34 @@ class Employees(TapHibobStream):
         for k in list(row.get("payroll", {}).keys()):
             if k not in set(["employment"]):
                 row.get("payroll", {}).pop(k, None)
-                
+
         if row.get("payroll", {}).get("employment"):
             for k in list(row.get("payroll", {}).get("employment", {}).keys()):
                 if k not in set(["contract"]):
                     row.get("payroll", {}).get("employment", {}).pop(k, None)
+
+        humanreadable_work_keys = set([
+                                 "custom",
+                                 "customColumns",
+                                 "reportsTo",
+                                 "department",
+                                 "title",
+                                ])
+        for k in list(row.get("humanReadable", {}).keys()):
+            if k not in set(["work"]):
+                row.get("humanReadable", {}).pop(k, None)
+
+        for k in list(row.get("humanReadable", {}).get("work", {}).keys()):
+            if k not in humanreadable_work_keys:
+                row.get("humanReadable", {}).get("work", {}).pop(k, None)
+
+        for k in list(row.get("humanReadable", {}).get("work", {}).get("customColumns", {}).keys()):
+            if k not in set(["column_1667499229415"]):
+                row.get("humanReadable", {}).get("work", {}).get("customColumns", {}).pop(k, None)
+
+        for k in list(row.get("humanReadable", {}).get("work", {}).get("custom", {}).keys()):
+            if k not in set(["field_1667499206086", "field_1667499039796"]):
+                row.get("humanReadable", {}).get("work", {}).get("custom", {}).pop(k, None)
 
         return row
 
