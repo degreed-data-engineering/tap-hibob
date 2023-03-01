@@ -33,10 +33,10 @@ class TapHibobStream(RESTStream):
 
     @property
     def authenticator(self):
+        authorization_key = self.config.get("authorization")
         http_headers = {
-            "Authorization": self.config.get("authorization")
+            "Authorization": f'Basic {authorization_key}'
         }
-
         return SimpleAuthenticator(stream=self, auth_headers=http_headers)
 
 class Employees(TapHibobStream):
