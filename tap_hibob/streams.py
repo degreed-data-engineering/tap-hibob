@@ -35,7 +35,7 @@ class TapHibobStream(RESTStream):
     def authenticator(self):
         authorization_key = self.config.get("authorization")
         http_headers = {
-            "Authorization": f'basic {authorization_key}'
+            "Authorization": f'Basic {authorization_key}'
         }
         return SimpleAuthenticator(stream=self, auth_headers=http_headers)
 
