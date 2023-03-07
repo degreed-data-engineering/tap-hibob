@@ -92,7 +92,7 @@ class Employees(TapHibobStream):
         "payroll",
             th.ObjectType(
                 th.Property(
-                "employement",
+                "employment",
                     th.ObjectType(
                         th.Property("contract", th.StringType),
                     ),
@@ -163,6 +163,7 @@ class Employees(TapHibobStream):
                                  "department",
                                  "isManager",
                                  "site",
+                                 "custom",
                                 ])
         for k in list(row.get("work", {}).keys()):
             if k not in employees_work_keys:
@@ -171,6 +172,10 @@ class Employees(TapHibobStream):
             for k in list(row.get("work", {}).get("reportsTo", {}).keys()):
                 if k not in set(["id"]):
                     row.get("work", {}).get("reportsTo", {}).pop(k, None)
+        if row.get("work", {}).get("custom"):
+            for k in list(row.get("work", {}).get("custom", {}).keys()):
+                if k not in set(["field_1667499206086"]):
+                     row.get("work", {}).get("custom", {}).pop(k, None)
 
         employees_internal_keys = set([
                                  "terminationDate",
@@ -220,9 +225,7 @@ class Employees(TapHibobStream):
                 row.get("humanReadable", {}).get("work", {}).get("customColumns", {}).pop(k, None)
 
         for k in list(row.get("humanReadable", {}).get("work", {}).get("custom", {}).keys()):
-            if k not in set(["field_1667499206086", "field_1667499039796"]):
+            if k not in set(["field_1667499039796"]):
                 row.get("humanReadable", {}).get("work", {}).get("custom", {}).pop(k, None)
 
         return row
-
-
