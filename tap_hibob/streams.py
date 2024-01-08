@@ -229,3 +229,4 @@ class Employees(TapHibobStream):
                 row.get("humanReadable", {}).get("work", {}).get("custom", {}).pop(k, None)
 
         return row
+
