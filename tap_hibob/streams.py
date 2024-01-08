@@ -231,21 +231,22 @@ class Employees(TapHibobStream):
                 if k not in set(["contract"]):
                     row.get("payroll", {}).get("employment", {}).pop(k, None)
 
-        humanreadable_work_keys = set(
+        humanreadable_keys = set(
             [
                 "custom",
                 "customColumns",
                 "reportsTo",
                 "department",
                 "title",
+                "category_1673451690985",
             ]
         )
         for k in list(row.get("humanReadable", {}).keys()):
-            if k not in set(["work"]):
+            if k not in set(["work", "custom"]):
                 row.get("humanReadable", {}).pop(k, None)
 
         for k in list(row.get("humanReadable", {}).get("work", {}).keys()):
-            if k not in humanreadable_work_keys:
+            if k not in humanreadable_keys:
                 row.get("humanReadable", {}).get("work", {}).pop(k, None)
 
         for k in list(
@@ -264,17 +265,8 @@ class Employees(TapHibobStream):
                     k, None
                 )
 
-        humanreadable_custom_keys = set(
-            [
-                "category_1673451690985",
-            ]
-        )
-        for k in list(row.get("humanReadable", {}).keys()):
-            if k not in set(["custom"]):
-                row.get("humanReadable", {}).pop(k, None)
-
         for k in list(row.get("humanReadable", {}).get("custom", {}).keys()):
-            if k not in humanreadable_custom_keys:
+            if k not in humanreadable_keys:
                 row.get("humanReadable", {}).get("custom", {}).pop(k, None)
 
         for k in list(
