@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name = "tap-hibob",
-    version = 0.2,
+    version = 0.3,
     description = "Hibob for Degreed taps in Meltano",
 
     author = "Degreed",
