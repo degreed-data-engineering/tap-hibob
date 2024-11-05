@@ -1,15 +1,11 @@
 """Stream class for tap-hibob."""
 
-import base64
-import json
-from typing import Dict, Optional, Any, Iterable
+
 from pathlib import Path
-from singer_sdk import typing
-from functools import cached_property
 from singer_sdk import typing as th
+from typing import Dict, Optional, Any
 from singer_sdk.streams import RESTStream
 from singer_sdk.authenticators import SimpleAuthenticator
-import requests
 
 
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
@@ -130,6 +126,19 @@ class Employees(TapHibobStream):
                     "custom",
                     th.ObjectType(
                         th.Property(
+                            "category_1726078147147",
+                            th.ObjectType(
+                                # DD_Department
+                                th.Property("field_1730210935488", th.StringType),
+                                # DD_SubDepartment
+                                th.Property("field_1730210953871", th.StringType),
+                                # DD_JobFamily
+                                th.Property("field_1730210972217", th.StringType),
+                                # DD_JobFamilyLevel
+                                th.Property("field_1730210998067", th.StringType),
+                            )
+                        ),
+                        th.Property(
                             "category_1673451690985",
                             th.ObjectType(
                                 # DevelopPermissionRole
@@ -239,6 +248,7 @@ class Employees(TapHibobStream):
                 "department",
                 "title",
                 "category_1673451690985",
+                "category_1726078147147",
             ]
         )
         for k in list(row.get("humanReadable", {}).keys()):
@@ -282,4 +292,16 @@ class Employees(TapHibobStream):
                     "category_1673451690985", {}
                 ).pop(k, None)
 
+        for k in list(
+            row.get("humanReadable", {})
+            .get("custom", {})
+            .get("category_1726078147147", {})
+            .keys()
+        ):
+            if k not in set(
+                ["field_1730210935488", "field_1730210953871", "field_1730210972217", "field_1730210998067"]
+            ):
+                row.get("humanReadable", {}).get("custom", {}).get(
+                    "category_1726078147147", {}
+                ).pop(k, None)
         return row
