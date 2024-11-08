@@ -1,6 +1,5 @@
 """Stream class for tap-hibob."""
 
-
 from pathlib import Path
 from singer_sdk import typing as th
 from typing import Dict, Optional, Any
@@ -128,15 +127,9 @@ class Employees(TapHibobStream):
                         th.Property(
                             "category_1726078147147",
                             th.ObjectType(
-                                # DD_Department
-                                th.Property("field_1730210935488", th.StringType),
-                                # DD_SubDepartment
-                                th.Property("field_1730210953871", th.StringType),
-                                # DD_JobFamily
-                                th.Property("field_1730210972217", th.StringType),
                                 # DD_JobFamilyLevel
                                 th.Property("field_1730210998067", th.StringType),
-                            )
+                            ),
                         ),
                         th.Property(
                             "category_1673451690985",
@@ -299,7 +292,9 @@ class Employees(TapHibobStream):
             .keys()
         ):
             if k not in set(
-                ["field_1730210935488", "field_1730210953871", "field_1730210972217", "field_1730210998067"]
+                [
+                    "field_1730210998067",
+                ]
             ):
                 row.get("humanReadable", {}).get("custom", {}).get(
                     "category_1726078147147", {}
