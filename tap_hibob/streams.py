@@ -223,7 +223,9 @@ class Employees(TapHibobStream):
         }
 
         # Helper function to clean up dictionaries
-        def cleanup_dict(d: dict, keys_to_keep: set):
+        def cleanup_dict(d: Optional[dict], keys_to_keep: set):
+            if not isinstance(d, dict):
+                return
             keys_to_delete = [key for key in d.keys() if key not in keys_to_keep]
             for key in keys_to_delete:
                 d.pop(key, None)
@@ -232,53 +234,55 @@ class Employees(TapHibobStream):
         cleanup_dict(row, employees_keys)
 
         # Clean up 'work' section
-        work = row.get("work", {})
+        work = row.get("work")
         cleanup_dict(work, employees_work_keys)
-        reports_to = work.get("reportsTo", {})
-        cleanup_dict(reports_to, {"id"})
-        custom = work.get("custom", {})
-        cleanup_dict(custom, {"field_1667499206086"})
+        if isinstance(work, dict):
+            reports_to = work.get("reportsTo")
+            cleanup_dict(reports_to, {"id"})
+            custom = work.get("custom")
+            cleanup_dict(custom, {"field_1667499206086"})
 
         # Clean up 'internal' section
-        internal = row.get("internal", {})
+        internal = row.get("internal")
         cleanup_dict(internal, employees_internal_keys)
 
         # Clean up 'address' section
-        address = row.get("address", {})
+        address = row.get("address")
         cleanup_dict(address, employees_address_keys)
 
         # Clean up 'payroll' section
-        payroll = row.get("payroll", {})
+        payroll = row.get("payroll")
         cleanup_dict(payroll, payroll_keys)
-        employment = payroll.get("employment", {})
-        cleanup_dict(employment, employment_keys)
+        if isinstance(payroll, dict):
+            employment = payroll.get("employment")
+            cleanup_dict(employment, employment_keys)
 
         # Clean up 'humanReadable' section
-        human_readable = row.get("humanReadable", {})
+        human_readable = row.get("humanReadable")
         cleanup_dict(human_readable, human_readable_keys)
+        if isinstance(human_readable, dict):
+            # Clean up 'humanReadable' -> 'work' section
+            hr_work = human_readable.get("work")
+            cleanup_dict(hr_work, hr_work_keys)
+            if isinstance(hr_work, dict):
+                # Clean up 'humanReadable' -> 'work' -> 'custom' section
+                hr_work_custom = hr_work.get("custom")
+                cleanup_dict(hr_work_custom, hr_work_custom_keys)
 
-        # Clean up 'humanReadable' -> 'work' section
-        hr_work = human_readable.get("work", {})
-        cleanup_dict(hr_work, hr_work_keys)
+                # Clean up 'humanReadable' -> 'work' -> 'customColumns' section
+                hr_work_custom_columns = hr_work.get("customColumns")
+                cleanup_dict(hr_work_custom_columns, hr_work_custom_columns_keys)
 
-        # Clean up 'humanReadable' -> 'work' -> 'custom' section
-        hr_work_custom = hr_work.get("custom", {})
-        cleanup_dict(hr_work_custom, hr_work_custom_keys)
+            # Clean up 'humanReadable' -> 'custom' section
+            hr_custom = human_readable.get("custom")
+            cleanup_dict(hr_custom, hr_custom_keys)
+            if isinstance(hr_custom, dict):
+                # Clean up 'humanReadable' -> 'custom' -> 'category_1726078147147' section
+                category_1726078147147 = hr_custom.get("category_1726078147147")
+                cleanup_dict(category_1726078147147, category_1726078147147_keys)
 
-        # Clean up 'humanReadable' -> 'work' -> 'customColumns' section
-        hr_work_custom_columns = hr_work.get("customColumns", {})
-        cleanup_dict(hr_work_custom_columns, hr_work_custom_columns_keys)
-
-        # Clean up 'humanReadable' -> 'custom' section
-        hr_custom = human_readable.get("custom", {})
-        cleanup_dict(hr_custom, hr_custom_keys)
-
-        # Clean up 'humanReadable' -> 'custom' -> 'category_1726078147147' section
-        category_1726078147147 = hr_custom.get("category_1726078147147", {})
-        cleanup_dict(category_1726078147147, category_1726078147147_keys)
-
-        # Clean up 'humanReadable' -> 'custom' -> 'category_1673451690985' section
-        category_1673451690985 = hr_custom.get("category_1673451690985", {})
-        cleanup_dict(category_1673451690985, category_1673451690985_keys)
+                # Clean up 'humanReadable' -> 'custom' -> 'category_1673451690985' section
+                category_1673451690985 = hr_custom.get("category_1673451690985")
+                cleanup_dict(category_1673451690985, category_1673451690985_keys)
 
         return row
