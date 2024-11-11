@@ -1,15 +1,10 @@
 """Stream class for tap-hibob."""
 
-import base64
-import json
-from typing import Dict, Optional, Any, Iterable
 from pathlib import Path
-from singer_sdk import typing
-from functools import cached_property
 from singer_sdk import typing as th
+from typing import Dict, Optional, Any
 from singer_sdk.streams import RESTStream
 from singer_sdk.authenticators import SimpleAuthenticator
-import requests
 
 
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
@@ -130,6 +125,13 @@ class Employees(TapHibobStream):
                     "custom",
                     th.ObjectType(
                         th.Property(
+                            "category_1726078147147",
+                            th.ObjectType(
+                                # DD_JobFamilyLevel
+                                th.Property("field_1730210998067", th.StringType),
+                            ),
+                        ),
+                        th.Property(
                             "category_1673451690985",
                             th.ObjectType(
                                 # DevelopPermissionRole
@@ -155,131 +157,132 @@ class Employees(TapHibobStream):
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
-        # TODO: Improve the logic below and simplify it.
-        employees_keys = set(
-            [
-                "id",
-                "creationDateTime",
-                "firstName",
-                "surname",
-                "fullName",
-                "displayName",
-                "companyId",
-                "email",
-                "work",
-                "internal",
-                "address",
-                "payroll",
-                "humanReadable",
-            ]
-        )
-        for k in list(row.keys()):
-            if k not in employees_keys:
-                row.pop(k, None)
+        # Define the keys to keep at each level
+        employees_keys = {
+            "id",
+            "creationDateTime",
+            "firstName",
+            "surname",
+            "fullName",
+            "displayName",
+            "companyId",
+            "email",
+            "work",
+            "internal",
+            "address",
+            "payroll",
+            "humanReadable",
+        }
+        employees_work_keys = {
+            "startDate",
+            "reportsTo",
+            "department",
+            "isManager",
+            "site",
+            "custom",
+        }
+        employees_internal_keys = {
+            "terminationDate",
+            "lifecycleStatus",
+        }
+        employees_address_keys = {
+            "siteCountry",
+            "usaState",
+            "city",
+            "siteCity",
+            "country",
+        }
+        payroll_keys = {"employment"}
+        employment_keys = {"contract"}
+        human_readable_keys = {"work", "custom"}
+        hr_work_keys = {
+            "custom",
+            "customColumns",
+            "reportsTo",
+            "department",
+            "title",
+        }
+        hr_work_custom_keys = {
+            "field_1667499206086",
+            "field_1667499039796",
+        }
+        hr_work_custom_columns_keys = {
+            "column_1667499229415",
+        }
+        hr_custom_keys = {
+            "category_1726078147147",
+            "category_1673451690985",
+        }
+        category_1726078147147_keys = {
+            "field_1730210998067",
+        }
+        category_1673451690985_keys = {
+            "field_1704464569961",
+            "field_1704464284132",
+            "field_1704464333828",
+        }
 
-        employees_work_keys = set(
-            [
-                "startDate",
-                "reportsTo",
-                "department",
-                "isManager",
-                "site",
-                "custom",
-            ]
-        )
-        for k in list(row.get("work", {}).keys()):
-            if k not in employees_work_keys:
-                row.get("work", {}).pop(k, None)
-        if row.get("work", {}).get("reportsTo"):
-            for k in list(row.get("work", {}).get("reportsTo", {}).keys()):
-                if k not in set(["id"]):
-                    row.get("work", {}).get("reportsTo", {}).pop(k, None)
-        if row.get("work", {}).get("custom"):
-            for k in list(row.get("work", {}).get("custom", {}).keys()):
-                if k not in set(["field_1667499206086"]):
-                    row.get("work", {}).get("custom", {}).pop(k, None)
+        # Helper function to clean up dictionaries
+        def cleanup_dict(d: Optional[dict], keys_to_keep: set):
+            if not isinstance(d, dict):
+                return
+            keys_to_delete = [key for key in d.keys() if key not in keys_to_keep]
+            for key in keys_to_delete:
+                d.pop(key, None)
 
-        employees_internal_keys = set(
-            [
-                "terminationDate",
-                "lifecycleStatus",
-            ]
-        )
-        for k in list(row.get("internal", {}).keys()):
-            if k not in employees_internal_keys:
-                row.get("internal", {}).pop(k, None)
+        # Clean up the top-level row
+        cleanup_dict(row, employees_keys)
 
-        employees_address_keys = set(
-            [
-                "siteCountry",
-                "usaState",
-                "city",
-                "siteCity",
-                "country",
-            ]
-        )
-        for k in list(row.get("address", {}).keys()):
-            if k not in employees_address_keys:
-                row.get("address", {}).pop(k, None)
+        # Clean up 'work' section
+        work = row.get("work")
+        cleanup_dict(work, employees_work_keys)
+        if isinstance(work, dict):
+            reports_to = work.get("reportsTo")
+            cleanup_dict(reports_to, {"id"})
+            custom = work.get("custom")
+            cleanup_dict(custom, {"field_1667499206086"})
 
-        for k in list(row.get("payroll", {}).keys()):
-            if k not in set(["employment"]):
-                row.get("payroll", {}).pop(k, None)
+        # Clean up 'internal' section
+        internal = row.get("internal")
+        cleanup_dict(internal, employees_internal_keys)
 
-        if row.get("payroll", {}).get("employment"):
-            for k in list(row.get("payroll", {}).get("employment", {}).keys()):
-                if k not in set(["contract"]):
-                    row.get("payroll", {}).get("employment", {}).pop(k, None)
+        # Clean up 'address' section
+        address = row.get("address")
+        cleanup_dict(address, employees_address_keys)
 
-        humanreadable_keys = set(
-            [
-                "custom",
-                "customColumns",
-                "reportsTo",
-                "department",
-                "title",
-                "category_1673451690985",
-            ]
-        )
-        for k in list(row.get("humanReadable", {}).keys()):
-            if k not in set(["work", "custom"]):
-                row.get("humanReadable", {}).pop(k, None)
+        # Clean up 'payroll' section
+        payroll = row.get("payroll")
+        cleanup_dict(payroll, payroll_keys)
+        if isinstance(payroll, dict):
+            employment = payroll.get("employment")
+            cleanup_dict(employment, employment_keys)
 
-        for k in list(row.get("humanReadable", {}).get("work", {}).keys()):
-            if k not in humanreadable_keys:
-                row.get("humanReadable", {}).get("work", {}).pop(k, None)
+        # Clean up 'humanReadable' section
+        human_readable = row.get("humanReadable")
+        cleanup_dict(human_readable, human_readable_keys)
+        if isinstance(human_readable, dict):
+            # Clean up 'humanReadable' -> 'work' section
+            hr_work = human_readable.get("work")
+            cleanup_dict(hr_work, hr_work_keys)
+            if isinstance(hr_work, dict):
+                # Clean up 'humanReadable' -> 'work' -> 'custom' section
+                hr_work_custom = hr_work.get("custom")
+                cleanup_dict(hr_work_custom, hr_work_custom_keys)
 
-        for k in list(
-            row.get("humanReadable", {}).get("work", {}).get("customColumns", {}).keys()
-        ):
-            if k not in set(["column_1667499229415"]):
-                row.get("humanReadable", {}).get("work", {}).get(
-                    "customColumns", {}
-                ).pop(k, None)
+                # Clean up 'humanReadable' -> 'work' -> 'customColumns' section
+                hr_work_custom_columns = hr_work.get("customColumns")
+                cleanup_dict(hr_work_custom_columns, hr_work_custom_columns_keys)
 
-        for k in list(
-            row.get("humanReadable", {}).get("work", {}).get("custom", {}).keys()
-        ):
-            if k not in set(["field_1667499039796"]):
-                row.get("humanReadable", {}).get("work", {}).get("custom", {}).pop(
-                    k, None
-                )
+            # Clean up 'humanReadable' -> 'custom' section
+            hr_custom = human_readable.get("custom")
+            cleanup_dict(hr_custom, hr_custom_keys)
+            if isinstance(hr_custom, dict):
+                # Clean up 'humanReadable' -> 'custom' -> 'category_1726078147147' section
+                category_1726078147147 = hr_custom.get("category_1726078147147")
+                cleanup_dict(category_1726078147147, category_1726078147147_keys)
 
-        for k in list(row.get("humanReadable", {}).get("custom", {}).keys()):
-            if k not in humanreadable_keys:
-                row.get("humanReadable", {}).get("custom", {}).pop(k, None)
-
-        for k in list(
-            row.get("humanReadable", {})
-            .get("custom", {})
-            .get("category_1673451690985", {})
-            .keys()
-        ):
-            if k not in set(
-                ["field_1704464569961", "field_1704464284132", "field_1704464333828"]
-            ):
-                row.get("humanReadable", {}).get("custom", {}).get(
-                    "category_1673451690985", {}
-                ).pop(k, None)
+                # Clean up 'humanReadable' -> 'custom' -> 'category_1673451690985' section
+                category_1673451690985 = hr_custom.get("category_1673451690985")
+                cleanup_dict(category_1673451690985, category_1673451690985_keys)
 
         return row
