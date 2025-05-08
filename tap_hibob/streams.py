@@ -1,5 +1,6 @@
 """Stream class for tap-hibob."""
 
+import requests
 from pathlib import Path
 from singer_sdk import typing as th
 from typing import Dict, Optional, Any
@@ -37,7 +38,7 @@ class TapHibobStream(RESTStream):
 
 class Employees(TapHibobStream):
     name = "employees"  # Stream name
-    path = "/v1/people"  # API endpoint after base_url
+    path = "v1/people/search"  # API endpoint after base_url
     primary_keys = ["id"]
     records_jsonpath = "$.employees[*]"  # https://jsonpath.com Use requests response json to identify the json path
     replication_key = None
@@ -148,12 +149,102 @@ class Employees(TapHibobStream):
         ),
     ).to_dict()
 
+    def prepare_request(
+        self, context: Optional[dict], next_page_token: Optional[Any]
+    ) -> requests.PreparedRequest:
+        """Prepare a request object.
+
+        If partitioning is supported, the `context` object will contain the partition
+        definitions. Pagination information can be parsed from `next_page_token` if
+        `next_page_token` is not None.
+
+        Args:
+            context: Stream partition or context dictionary.
+            next_page_token: Token, page number or any request argument to request the
+                next page of data.
+
+        Returns:
+            Build a request with the stream's URL, path, query parameters,
+            HTTP headers and authenticator.
+        """
+        # TODO:
+        # By default, the Meltano SDK sends requests using the GET method.
+        # However, the new HiBob Employee API requires POST requests.
+        # Since the current SDK version does not support overriding the `http_method` property directly,
+        # we use a workaround by overriding the `prepare_request()` method.
+        # Once we upgrade to Meltano SDK version 0.44.x or later, we can simplify the implementation
+        # by overriding the `http_method` property instead of overriding the `prepare_request()` method.
+        # References:
+        # - SDK docs: https://sdk.meltano.com/en/latest/classes/singer_sdk.RESTStream.html#singer_sdk.RESTStream.http_method
+        # - HiBob API docs: https://apidocs.hibob.com/reference/post_people-search
+
+        http_method = "POST"
+        url: str = self.get_url(context)
+        params: dict = self.get_url_params(context, next_page_token)
+        request_data = self.prepare_request_payload(context, next_page_token)
+        headers = self.http_headers
+
+        authenticator = self.authenticator
+        if authenticator:
+            headers.update(authenticator.auth_headers or {})
+            params.update(authenticator.auth_params or {})
+
+        request = self.requests_session.prepare_request(
+            requests.Request(
+                method=http_method,
+                url=url,
+                params=params,
+                headers=headers,
+                json=request_data,
+            ),
+        )
+        return request
+
+    def prepare_request_payload(self, context, next_page_token):
+        # Return your JSON payload as a Python dict
+        # See: https://apidocs.hibob.com/reference/post_people-search
+        return {
+            "showInactive": True,
+            "humanReadable": "append",
+            "fields": [
+                "root.id",
+                "root.creationDateTime",
+                "root.firstName",
+                "root.surname",
+                "root.fullName",
+                "root.displayName",
+                "root.companyId",
+                "root.email",
+                "work.startDate",
+                "work.department",
+                "work.isManager",
+                "work.site",
+                "work.reportsTo",
+                "internal.lifecycleStatus",
+                "internal.terminationDate",
+                "address.siteCountry",
+                "address.usaState",
+                "address.city",
+                "address.siteCity",
+                "address.country",
+                "payroll.employment.contract",
+                "work.custom.field_1667499206086",
+                "work.custom.field_1667499039796",
+                "work.customColumns.column_1667499229415",
+                "work.reportsTo",
+                "work.department",
+                "work.title",
+                "custom.category_1726078147147.field_1730210998067",
+                "custom.category_1673451690985.field_1704464569961",
+                "custom.category_1673451690985.field_1704464284132",
+                "custom.category_1673451690985.field_1704464333828",
+            ],
+        }
+
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
-        params["showInactive"] = "true"
-        params["includeHumanReadable"] = "true"
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
